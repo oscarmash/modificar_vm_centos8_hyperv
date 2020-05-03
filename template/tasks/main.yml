@@ -87,29 +87,18 @@
     regexp: "DNS2="
     line: "DNS2={{ dns2 }}"
 
-- name: Check the uptime
-  shell: uptime
-  register: UPTIME_PRE_REBOOT
-
-- debug: msg={{UPTIME_PRE_REBOOT.stdout}}
-
-- name: Waiting machine
-  reboot:
-
-- name: Check the uptime after reboot
-  shell: uptime
-  register: UPTIME_POST_REBOOT
-
-- debug: msg={{UPTIME_POST_REBOOT.stdout}}
-
 - name: Change IP
   lineinfile:
     path: /etc/sysconfig/network-scripts/ifcfg-eth0
     regexp: "IPADDR="
     line: "IPADDR={{ ip }}"
 
-- name: Check the uptime
-  shell: uptime
-  register: UPTIME_PRE_REBOOT
+- name: Restart server
+  shell: sleep 2 && shutdown -r now
+  async: 1
+  poll: 0
+  ignore_errors: true
 
-- debug: msg={{UPTIME_PRE_REBOOT.stdout}}
+- name: Rebotando equipo
+  shell: /sbin/shutdown -r now && sleep 1
+
