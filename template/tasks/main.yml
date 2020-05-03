@@ -1,0 +1,115 @@
+---
+# tasks file for template
+
+- name: Disable grub graphical boot
+  lineinfile:
+    dest: /etc/default/grub
+    line: '\1\2'
+    regexp: '^(.*) rhgb(.*)$'
+    backrefs: yes
+    state: present
+  register: result_rhgb
+
+- name: Disable grub quiet boot
+  lineinfile:
+    dest: /etc/default/grub
+    line: '\1\2'
+    regexp: '^(.*) quiet(.*)$'
+    backrefs: yes
+    state: present
+  register: result_quiet
+
+- name: Update grub.cfg
+  command: grub2-mkconfig -o grub2-mkconfig -o /boot/grub2/grub.cfg
+  when: result_rhgb.changed or result_quiet.changed
+
+- name: Install EPEL
+  dnf:
+    name: 'https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm'
+    state: present
+
+- name: Install basic packages
+  dnf:
+    name: ['vim', 'htop', 'ncdu', 'iftop']
+
+- name: Upgrade all packages
+  dnf:
+    name: "*"
+    state: latest
+
+- name: Change vim background
+  lineinfile:
+    path: /etc/vimrc
+    regexp: "set background=dark"
+    line: "set background=dark"
+
+- name: Change PermitRootLogin
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "PermitRootLogin yes"
+    line: "PermitRootLogin without-password"
+
+- name: Disable SELinux
+  selinux:
+    state: disabled
+
+- name: Stop and disable firewalld
+  service:
+    name: firewalld
+    state: stopped
+    enabled: False
+
+- name: Change file - hosts
+  lineinfile:
+    path: /etc/hosts
+    regexp: "{{ hostname }}"
+    line: "{{ ip }} {{ hostname }}.{{ domain }} {{ hostname }}"
+
+- name: Set hostname
+  hostname:
+    name: "{{ hostname }}.{{ domain }}"
+
+- name: Change domain
+  lineinfile:
+    path: /etc/sysconfig/network-scripts/ifcfg-eth0
+    regexp: "DOMAIN="
+    line: "DOMAIN={{ domain }}"
+
+- name: Change DNS 1
+  lineinfile:
+    path: /etc/sysconfig/network-scripts/ifcfg-eth0
+    regexp: "DNS1="
+    line: "DNS1={{ dns1 }}"
+
+- name: Change DNS 2
+  lineinfile:
+    path: /etc/sysconfig/network-scripts/ifcfg-eth0
+    regexp: "DNS2="
+    line: "DNS2={{ dns2 }}"
+
+- name: Check the uptime
+  shell: uptime
+  register: UPTIME_PRE_REBOOT
+
+- debug: msg={{UPTIME_PRE_REBOOT.stdout}}
+
+- name: Waiting machine
+  reboot:
+
+- name: Check the uptime after reboot
+  shell: uptime
+  register: UPTIME_POST_REBOOT
+
+- debug: msg={{UPTIME_POST_REBOOT.stdout}}
+
+- name: Change IP
+  lineinfile:
+    path: /etc/sysconfig/network-scripts/ifcfg-eth0
+    regexp: "IPADDR="
+    line: "IPADDR={{ ip }}"
+
+- name: Check the uptime
+  shell: uptime
+  register: UPTIME_PRE_REBOOT
+
+- debug: msg={{UPTIME_PRE_REBOOT.stdout}}

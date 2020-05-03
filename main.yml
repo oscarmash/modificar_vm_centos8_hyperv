@@ -1,0 +1,8 @@
+---
+
+- name: Modificacion plantilla Centos 7
+  hosts: template
+  gather_facts: false
+
+  roles:
+    - template
